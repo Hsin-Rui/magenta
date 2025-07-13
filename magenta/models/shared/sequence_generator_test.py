@@ -17,9 +17,9 @@
 from magenta.models.shared import model
 from magenta.models.shared import sequence_generator
 from note_seq.protobuf import generator_pb2
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
-tf.disable_v2_behavior()
+tf.compat.v1.disable_v2_behavior()
 
 
 class Model(model.BaseModel):

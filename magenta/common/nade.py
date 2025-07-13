@@ -20,13 +20,14 @@ from __future__ import print_function
 
 import math
 
-import tensorflow.compat.v1 as tf
+# import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tensorflow_probability as tfp
 
 
 def _safe_log(tensor):
   """Lower bounded log function."""
-  return tf.log(1e-6 + tensor)
+  return tf.compat.v1.log(1e-6 + tensor)
 
 
 class Nade(object):
@@ -46,23 +47,23 @@ class Nade(object):
     self._num_hidden = num_hidden
 
     std = 1.0 / math.sqrt(self._num_dims)
-    initializer = tf.truncated_normal_initializer(stddev=std)
+    initializer = tf.compat.v1.truncated_normal_initializer(stddev=std)
 
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
       # Encoder weights (`V` in [1]).
-      self.w_enc = tf.get_variable(
+      self.w_enc = tf.compat.v1.get_variable(
           'w_enc',
           shape=[self._num_dims, 1, self._num_hidden],
           initializer=initializer)
       # Transposed decoder weights (`W'` in [1]).
-      self.w_dec_t = tf.get_variable(
+      self.w_dec_t = tf.compat.v1.get_variable(
           'w_dec_t',
           shape=[self._num_dims, self._num_hidden, 1],
           initializer=initializer)
       # Internal encoder bias term (`b` in [1]). Will be used if external biases
       # are not provided.
       if internal_bias:
-        self.b_enc = tf.get_variable(
+        self.b_enc = tf.compat.v1.get_variable(
             'b_enc',
             shape=[1, self._num_hidden],
             initializer=initializer)
@@ -71,7 +72,7 @@ class Nade(object):
       # Internal decoder bias term (`c` in [1]). Will be used if external biases
       # are not provided.
       if internal_bias:
-        self.b_dec = tf.get_variable(
+        self.b_dec = tf.compat.v1.get_variable(
             'b_dec',
             shape=[1, self._num_dims],
             initializer=initializer)
@@ -107,28 +108,28 @@ class Nade(object):
        cond_probs: The conditional probabilities at each index for every batch,
            sized `[batch_size, num_dims]`.
     """
-    batch_size = tf.shape(x)[0]
+    batch_size = tf.compat.v1.shape(x)[0]
 
     b_enc = b_enc if b_enc is not None else self.b_enc
     b_dec = b_dec if b_dec is not None else self.b_dec
 
     # Broadcast if needed.
     if b_enc.shape[0] == 1 != batch_size:
-      b_enc = tf.tile(b_enc, [batch_size, 1])
+      b_enc = tf.compat.v1.tile(b_enc, [batch_size, 1])
     if b_dec.shape[0] == 1 != batch_size:
-      b_dec = tf.tile(b_dec, [batch_size, 1])
+      b_dec = tf.compat.v1.tile(b_dec, [batch_size, 1])
 
     # Initial condition before the loop.
     a_0 = b_enc
-    log_p_0 = tf.zeros([batch_size, 1])
+    log_p_0 = tf.compat.v1.zeros([batch_size, 1])
     cond_p_0 = []
 
-    x_arr = tf.unstack(
-        tf.reshape(tf.transpose(x), [self.num_dims, batch_size, 1]))
-    w_enc_arr = tf.unstack(self.w_enc)
-    w_dec_arr = tf.unstack(self.w_dec_t)
-    b_dec_arr = tf.unstack(
-        tf.reshape(tf.transpose(b_dec), [self.num_dims, batch_size, 1]))
+    x_arr = tf.compat.v1.unstack(
+        tf.compat.v1.reshape(tf.compat.v1.transpose(x), [self.num_dims, batch_size, 1]))
+    w_enc_arr = tf.compat.v1.unstack(self.w_enc)
+    w_dec_arr = tf.compat.v1.unstack(self.w_dec_t)
+    b_dec_arr = tf.compat.v1.unstack(
+        tf.compat.v1.reshape(tf.compat.v1.transpose(b_dec), [self.num_dims, batch_size, 1]))
 
     def loop_body(i, a, log_p, cond_p):
       """Accumulate hidden state, log_p, and cond_p for index i."""
@@ -150,7 +151,7 @@ class Nade(object):
       cond_p_new = cond_p + [cond_p_i]
 
       # Encode value and add to hidden units.
-      a_new = a + tf.matmul(v_i, w_enc_i)
+      a_new = a + tf.compat.v1.matmul(v_i, w_enc_i)
 
       return a_new, log_p_new, cond_p_new
 
@@ -159,8 +160,8 @@ class Nade(object):
     for i in range(self.num_dims):
       a, log_p, cond_p = loop_body(i, a, log_p, cond_p)
 
-    return (tf.squeeze(log_p, squeeze_dims=[1]),
-            tf.transpose(tf.squeeze(tf.stack(cond_p), [2])))
+    return (tf.compat.v1.squeeze(log_p, squeeze_dims=[1]),
+            tf.compat.v1.transpose(tf.compat.v1.squeeze(tf.compat.v1.stack(cond_p), [2])))
 
   def sample(self, b_enc=None, b_dec=None, n=None, temperature=None):
     """Generate samples for the batch from the NADE.
@@ -186,22 +187,22 @@ class Nade(object):
     b_enc = b_enc if b_enc is not None else self.b_enc
     b_dec = b_dec if b_dec is not None else self.b_dec
 
-    batch_size = n or tf.shape(b_enc)[0]
+    batch_size = n or tf.compat.v1.shape(b_enc)[0]
 
     # Broadcast if needed.
     if b_enc.shape[0] == 1 != batch_size:
-      b_enc = tf.tile(b_enc, [batch_size, 1])
+      b_enc = tf.compat.v1.tile(b_enc, [batch_size, 1])
     if b_dec.shape[0] == 1 != batch_size:
-      b_dec = tf.tile(b_dec, [batch_size, 1])
+      b_dec = tf.compat.v1.tile(b_dec, [batch_size, 1])
 
     a_0 = b_enc
     sample_0 = []
-    log_p_0 = tf.zeros([batch_size, 1])
+    log_p_0 = tf.compat.v1.zeros([batch_size, 1])
 
-    w_enc_arr = tf.unstack(self.w_enc)
-    w_dec_arr = tf.unstack(self.w_dec_t)
-    b_dec_arr = tf.unstack(
-        tf.reshape(tf.transpose(b_dec), [self.num_dims, batch_size, 1]))
+    w_enc_arr = tf.compat.v1.unstack(self.w_enc)
+    w_dec_arr = tf.compat.v1.unstack(self.w_dec_t)
+    b_dec_arr = tf.compat.v1.unstack(
+        tf.compat.v1.reshape(tf.compat.v1.transpose(b_dec), [self.num_dims, batch_size, 1]))
 
     def loop_body(i, a, sample, log_p):
       """Accumulate hidden state, sample, and log probability for index i."""
@@ -213,10 +214,10 @@ class Nade(object):
       cond_p_i, cond_l_i = self._cond_prob(a, w_dec_i, b_dec_i)
 
       if temperature is None:
-        v_i = tf.to_float(tf.greater_equal(cond_p_i, 0.5))
+        v_i = tf.compat.v1.to_float(tf.compat.v1.greater_equal(cond_p_i, 0.5))
       else:
         bernoulli = tfp.distributions.Bernoulli(
-            logits=cond_l_i / temperature, dtype=tf.float32)
+            logits=cond_l_i / temperature, dtype=tf.compat.v1.float32)
         v_i = bernoulli.sample()
 
       # Accumulate sampled values.
@@ -229,7 +230,7 @@ class Nade(object):
       log_p_new = log_p + log_p_i
 
       # Encode value and add to hidden units.
-      a_new = a + tf.matmul(v_i, w_enc_i)
+      a_new = a + tf.compat.v1.matmul(v_i, w_enc_i)
 
       return a_new, sample_new, log_p_new
 
@@ -237,8 +238,8 @@ class Nade(object):
     for i in range(self.num_dims):
       a, sample, log_p = loop_body(i, a, sample, log_p)
 
-    return (tf.transpose(tf.squeeze(tf.stack(sample), [2])),
-            tf.squeeze(log_p, squeeze_dims=[1]))
+    return (tf.compat.v1.transpose(tf.compat.v1.squeeze(tf.compat.v1.stack(sample), [2])),
+            tf.compat.v1.squeeze(log_p, squeeze_dims=[1]))
 
   def _cond_prob(self, a, w_dec_i, b_dec_i):
     """Gets the conditional probability for a single dimension.
@@ -256,7 +257,7 @@ class Nade(object):
         `[batch_size, 1]`.
     """
     # Decode hidden units to get conditional probability.
-    h = tf.sigmoid(a)
-    cond_l_i = b_dec_i + tf.matmul(h, w_dec_i)
-    cond_p_i = tf.sigmoid(cond_l_i)
+    h = tf.compat.v1.sigmoid(a)
+    cond_l_i = b_dec_i + tf.compat.v1.matmul(h, w_dec_i)
+    cond_p_i = tf.compat.v1.sigmoid(cond_l_i)
     return cond_p_i, cond_l_i

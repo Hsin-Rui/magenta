@@ -22,7 +22,7 @@ import os
 import tempfile
 
 from note_seq.protobuf import generator_pb2
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class SequenceGeneratorError(Exception):  # pylint:disable=g-bad-exception-name
@@ -33,8 +33,8 @@ class SequenceGeneratorError(Exception):  # pylint:disable=g-bad-exception-name
 # TODO(adarob): Replace with tf.saver.checkpoint_file_exists when released.
 def _checkpoint_file_exists(checkpoint_file_or_prefix):
   """Returns True if checkpoint file or files (for V2) exist."""
-  return (tf.gfile.Exists(checkpoint_file_or_prefix) or
-          tf.gfile.Exists(checkpoint_file_or_prefix + '.index'))
+  return (tf.compat.v1.gfile.Exists(checkpoint_file_or_prefix) or
+          tf.compat.v1.gfile.Exists(checkpoint_file_or_prefix + '.index'))
 
 
 class BaseSequenceGenerator(object):
@@ -126,13 +126,13 @@ class BaseSequenceGenerator(object):
             'Checkpoint path does not exist: %s' % (self._checkpoint))
       checkpoint_file = self._checkpoint
       # If this is a directory, try to determine the latest checkpoint in it.
-      if tf.gfile.IsDirectory(checkpoint_file):
+      if tf.compat.v1.gfile.IsDirectory(checkpoint_file):
         checkpoint_file = tf.train.latest_checkpoint(checkpoint_file)
       if checkpoint_file is None:
         raise SequenceGeneratorError(
             'No checkpoint file found in directory: %s' % self._checkpoint)
       if (not _checkpoint_file_exists(self._checkpoint) or
-          tf.gfile.IsDirectory(checkpoint_file)):
+          tf.compat.v1.gfile.IsDirectory(checkpoint_file)):
         raise SequenceGeneratorError(
             'Checkpoint path is not a file: %s (supplied path: %s)' % (
                 checkpoint_file, self._checkpoint))
@@ -143,12 +143,12 @@ class BaseSequenceGenerator(object):
       try:
         tempdir = tempfile.mkdtemp()
         checkpoint_filename = os.path.join(tempdir, 'model.ckpt')
-        with tf.gfile.Open(checkpoint_filename, 'wb') as f:
+        with tf.compat.v1.gfile.Open(checkpoint_filename, 'wb') as f:
           # For now, we support only 1 checkpoint file.
           # If needed, we can later change this to support sharded checkpoints.
           f.write(self._bundle.checkpoint_file[0])
         metagraph_filename = os.path.join(tempdir, 'model.ckpt.meta')
-        with tf.gfile.Open(metagraph_filename, 'wb') as f:
+        with tf.compat.v1.gfile.Open(metagraph_filename, 'wb') as f:
           f.write(self._bundle.metagraph_file)
 
         self._model.initialize_with_checkpoint_and_metagraph(
@@ -156,7 +156,7 @@ class BaseSequenceGenerator(object):
       finally:
         # Clean up the temp dir.
         if tempdir is not None:
-          tf.gfile.DeleteRecursively(tempdir)
+          tf.compat.v1.gfile.DeleteRecursively(tempdir)
     self._initialized = True
 
   def close(self):
@@ -214,9 +214,9 @@ class BaseSequenceGenerator(object):
           'a bundle file.')
 
     if not self.details.description:
-      tf.logging.warn('Writing bundle file with no generator description.')
+      tf.compat.v1.logging.warn('Writing bundle file with no generator description.')
     if not bundle_description:
-      tf.logging.warn('Writing bundle file with no bundle description.')
+      tf.compat.v1.logging.warn('Writing bundle file with no bundle description.')
 
     self.initialize()
 
@@ -239,13 +239,13 @@ class BaseSequenceGenerator(object):
       bundle.generator_details.CopyFrom(self.details)
       if bundle_description:
         bundle.bundle_details.description = bundle_description
-      with tf.gfile.Open(checkpoint_filename, 'rb') as f:
+      with tf.compat.v1.gfile.Open(checkpoint_filename, 'rb') as f:
         bundle.checkpoint_file.append(f.read())
-      with tf.gfile.Open(metagraph_filename, 'rb') as f:
+      with tf.compat.v1.gfile.Open(metagraph_filename, 'rb') as f:
         bundle.metagraph_file = f.read()
 
-      with tf.gfile.Open(bundle_file, 'wb') as f:
+      with tf.compat.v1.gfile.Open(bundle_file, 'wb') as f:
         f.write(bundle.SerializeToString())
     finally:
       if tempdir is not None:
-        tf.gfile.DeleteRecursively(tempdir)
+        tf.compat.v1.gfile.DeleteRecursively(tempdir)

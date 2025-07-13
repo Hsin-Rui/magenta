@@ -17,30 +17,31 @@
 from magenta.contrib import training as contrib_training
 from magenta.models.melody_rnn import melody_rnn_model
 import note_seq
-import tensorflow.compat.v1 as tf
+# import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
-FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string(
+FLAGS = tf.compat.v1.app.flags.FLAGS
+tf.compat.v1.app.flags.DEFINE_string(
     'config',
     None,
     'Which config to use. Must be one of \'basic\', \'lookback\', or '
     '\'attention\'. Mutually exclusive with `--melody_encoder_decoder`.')
-tf.app.flags.DEFINE_string(
+tf.compat.v1.app.flags.DEFINE_string(
     'melody_encoder_decoder',
     None,
     'Which encoder/decoder to use. Must be one of \'onehot\', \'lookback\', or '
     '\'key\'. Mutually exclusive with `--config`.')
-tf.app.flags.DEFINE_string(
+tf.compat.v1.app.flags.DEFINE_string(
     'generator_id',
     None,
     'A unique ID for the generator. Overrides the default if `--config` is '
     'also supplied.')
-tf.app.flags.DEFINE_string(
+tf.compat.v1.app.flags.DEFINE_string(
     'generator_description',
     None,
     'A description of the generator. Overrides the default if `--config` is '
     'also supplied.')
-tf.app.flags.DEFINE_string(
+tf.compat.v1.app.flags.DEFINE_string(
     'hparams', '',
     'Comma-separated list of `name=value` pairs. For each pair, the value of '
     'the hyperparameter named `name` is set to `value`. This mapping is merged '

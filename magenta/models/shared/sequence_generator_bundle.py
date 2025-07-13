@@ -15,7 +15,7 @@
 """Utility functions for handling bundle files."""
 
 from note_seq.protobuf import generator_pb2
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from google.protobuf import message
 
 
@@ -27,7 +27,7 @@ class GeneratorBundleParseError(Exception):
 def read_bundle_file(bundle_file):
   # Read in bundle file.
   bundle = generator_pb2.GeneratorBundle()
-  with tf.gfile.Open(bundle_file, 'rb') as f:
+  with tf.compat.v1.gfile.Open(bundle_file, 'rb') as f:
     try:
       bundle.ParseFromString(f.read())
     except message.DecodeError as e:

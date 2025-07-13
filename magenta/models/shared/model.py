@@ -19,7 +19,7 @@ Provides a uniform interface for interacting with any model.
 
 import abc
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class BaseModel(object, metaclass=abc.ABCMeta):
@@ -49,11 +49,11 @@ class BaseModel(object, metaclass=abc.ABCMeta):
     Args:
       checkpoint_file: The path to the checkpoint file that should be used.
     """
-    with tf.Graph().as_default():
+    with tf.compat.v1.Graph().as_default():
       self._build_graph_for_generation()
-      saver = tf.train.Saver()
-      self._session = tf.Session()
-      tf.logging.info('Checkpoint used: %s', checkpoint_file)
+      saver = tf.compat.v1.train.Saver()
+      self._session = tf.compat.v1.Session()
+      tf.compat.v1.logging.info('Checkpoint used: %s', checkpoint_file)
       saver.restore(self._session, checkpoint_file)
 
   def initialize_with_checkpoint_and_metagraph(self, checkpoint_filename,
@@ -64,9 +64,9 @@ class BaseModel(object, metaclass=abc.ABCMeta):
       checkpoint_filename: The path to the checkpoint file that should be used.
       metagraph_filename: The path to the metagraph file that should be used.
     """
-    with tf.Graph().as_default():
-      self._session = tf.Session()
-      new_saver = tf.train.import_meta_graph(metagraph_filename)
+    with tf.compat.v1.Graph().as_default():
+      self._session = tf.compat.v1.Session()
+      new_saver = tf.compat.v1.train.import_meta_graph(metagraph_filename)
       new_saver.restore(self._session, checkpoint_filename)
 
   def write_checkpoint_with_metagraph(self, checkpoint_filename):
@@ -76,7 +76,7 @@ class BaseModel(object, metaclass=abc.ABCMeta):
       checkpoint_filename: Path to the checkpoint file.
     """
     with self._session.graph.as_default():
-      saver = tf.train.Saver(sharded=False, write_version=tf.train.SaverDef.V1)
+      saver = tf.compat.v1.train.Saver(sharded=False, write_version=tf.compat.v1.train.SaverDef.V1)
       saver.save(self._session, checkpoint_filename, meta_graph_suffix='meta',
                  write_meta_graph=True)
 
